@@ -8,6 +8,10 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
 
+import javax.validation.ConstraintViolationException;
+import javax.validation.Valid;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 
 @RestController
@@ -25,7 +29,7 @@ public class CustomerController {
     }
 
     @PostMapping
-    private ResponseEntity createCustomer(@RequestBody CustomerDto customerDto) {
+    private ResponseEntity createCustomer(@Valid @RequestBody CustomerDto customerDto) {
 
         CustomerDto customer = customerService.create(customerDto);
         HttpHeaders http = new HttpHeaders();
@@ -41,10 +45,23 @@ public class CustomerController {
     }
 
     @PutMapping("{id}")
-    public ResponseEntity updateCustomer(@PathVariable UUID id, @RequestBody CustomerDto customerDto) {
+    public ResponseEntity updateCustomer(@PathVariable UUID id, @Valid @RequestBody CustomerDto customerDto) {
 
         customerService.update(id, customerDto);
 
         return new ResponseEntity(HttpStatus.NO_CONTENT);
     }
+
+    @ExceptionHandler(ConstraintViolationException.class)
+    public ResponseEntity<List> validationErrorHandler(ConstraintViolationException e) {
+        List<String> errors = new ArrayList<>();
+
+        e.getConstraintViolations().forEach(v -> {
+            errors.add(v.getPropertyPath() + " " + v.getMessage());
+        });
+
+        return new ResponseEntity<>(errors, HttpStatus.BAD_REQUEST);
+    }
+
+
 }
